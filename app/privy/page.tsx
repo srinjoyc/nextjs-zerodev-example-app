@@ -1,13 +1,43 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { usePrivy } from "@privy-io/react-auth";
-import Counter from "../counter";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import AuthButton from "../components/auth-button";
+import WalletDashboard from "../components/wallet-dashboard";
+import { setSession, clearSession } from "../lib/session";
 
 export default function PrivyPage() {
   const { ready, authenticated, user } = usePrivy();
-  const walletAddress = user?.wallet?.address;
+  const { wallets } = useWallets();
+
+  const privyWallet = wallets.find((w) => w.walletClientType === "privy");
+  const address = user?.wallet?.address;
+
+  useEffect(() => {
+    if (authenticated && user) {
+      const displayName =
+        user.google?.name ?? user.email?.address ?? "User";
+      setSession({
+        provider: "Privy",
+        providerHref: "/privy",
+        address: address ?? "",
+        displayName,
+      });
+    } else if (ready && !authenticated) {
+      clearSession();
+    }
+  }, [authenticated, ready, user, address]);
+
+  const signMessage = async (message: string): Promise<string> => {
+    if (!privyWallet) throw new Error("No wallet found");
+    const provider = await privyWallet.getEthereumProvider();
+    const sig = await provider.request({
+      method: "personal_sign",
+      params: [message, privyWallet.address],
+    });
+    return sig as string;
+  };
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8">
@@ -31,17 +61,14 @@ export default function PrivyPage() {
         </div>
 
         {!ready || !authenticated ? (
-          <div className="text-center py-12 space-y-3">
-            <p className="text-base opacity-50">Sign in to use the counter.</p>
+          <div className="text-center py-12">
+            <p className="text-base opacity-50">Sign in to view your wallet.</p>
           </div>
+        ) : address ? (
+          <WalletDashboard address={address} onSignMessage={signMessage} />
         ) : (
-          <div className="space-y-4">
-            <Counter />
-            {walletAddress && (
-              <p className="text-center text-xs opacity-40 font-mono break-all">
-                {walletAddress}
-              </p>
-            )}
+          <div className="text-center py-12">
+            <p className="text-base opacity-50">Creating your wallet…</p>
           </div>
         )}
       </div>

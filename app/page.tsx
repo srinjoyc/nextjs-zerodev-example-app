@@ -1,4 +1,5 @@
 import ProviderCard from "./components/provider-card";
+import SessionBanner from "./components/session-banner";
 
 const providers = [
   {
@@ -41,7 +42,9 @@ const providers = [
 export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8">
-      <div className="max-w-2xl w-full space-y-10">
+      <div className="max-w-2xl w-full space-y-8">
+        <SessionBanner />
+
         <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight">
             Wallet Provider Demo

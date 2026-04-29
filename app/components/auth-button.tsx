@@ -1,6 +1,7 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
+import { clearSession } from "../lib/session";
 
 export default function AuthButton() {
   const { ready, authenticated, user, login, logout } = usePrivy();
@@ -32,7 +33,7 @@ export default function AuthButton() {
     <div className="flex items-center gap-3">
       <span className="text-sm opacity-70">{displayName}</span>
       <button
-        onClick={logout}
+        onClick={() => { clearSession(); logout(); }}
         className="px-4 py-2 rounded-md border border-black/15 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 transition text-sm"
       >
         Sign out
