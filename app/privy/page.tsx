@@ -3,9 +3,9 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import AuthButton from "../components/auth-button";
+import AuthButton from "./auth-button";
 import WalletDashboard from "../components/wallet-dashboard";
-import { setSession, clearSession } from "../lib/session";
+import { setSession, clearSessionForProvider } from "../lib/session";
 
 export default function PrivyPage() {
   const { ready, authenticated, user } = usePrivy();
@@ -25,7 +25,7 @@ export default function PrivyPage() {
         displayName,
       });
     } else if (ready && !authenticated) {
-      clearSession();
+      clearSessionForProvider("Privy");
     }
   }, [authenticated, ready, user, address]);
 
@@ -37,6 +37,35 @@ export default function PrivyPage() {
       params: [message, privyWallet.address],
     });
     return sig as string;
+  };
+
+  const signTransaction = async ({
+    to,
+    value,
+  }: {
+    to: string;
+    value: string;
+  }): Promise<string> => {
+    if (!privyWallet || !address) throw new Error("No wallet found");
+    const provider = await privyWallet.getEthereumProvider();
+    const valueHex = `0x${BigInt(Math.round(parseFloat(value) * 1e18)).toString(16)}`;
+    const result = await provider.request({
+      method: "eth_signTransaction",
+      params: [
+        {
+          from: address,
+          to,
+          value: valueHex,
+          gas: "0x5208",
+          maxFeePerGas: "0x4A817C800",
+          maxPriorityFeePerGas: "0x3B9ACA00",
+          nonce: "0x0",
+          type: "0x2",
+          chainId: "0x1",
+        },
+      ],
+    });
+    return result as string;
   };
 
   return (
@@ -65,7 +94,12 @@ export default function PrivyPage() {
             <p className="text-base opacity-50">Sign in to view your wallet.</p>
           </div>
         ) : address ? (
-          <WalletDashboard address={address} onSignMessage={signMessage} />
+          <WalletDashboard
+            providerName="Privy"
+            address={address}
+            onSignMessage={signMessage}
+            onSignTransaction={signTransaction}
+          />
         ) : (
           <div className="text-center py-12">
             <p className="text-base opacity-50">Creating your wallet…</p>

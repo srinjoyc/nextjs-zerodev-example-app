@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useDynamicContext, useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
 import DynamicAuthButton from "./auth-button";
 import WalletDashboard from "../components/wallet-dashboard";
-import { setSession, clearSession } from "../lib/session";
+import { setSession, clearSessionForProvider } from "../lib/session";
 
 export default function DynamicPage() {
   const { sdkHasLoaded, primaryWallet, user } = useDynamicContext();
@@ -28,7 +28,7 @@ export default function DynamicPage() {
         displayName,
       });
     } else if (sdkHasLoaded && !isLoggedIn) {
-      clearSession();
+      clearSessionForProvider("Dynamic");
     }
   }, [isLoggedIn, sdkHasLoaded, user, address]);
 
@@ -36,6 +36,30 @@ export default function DynamicPage() {
     if (!primaryWallet) throw new Error("No wallet found");
     const sig = await primaryWallet.signMessage(message);
     return sig as string;
+  };
+
+  const signTransaction = async ({
+    to,
+    value,
+  }: {
+    to: string;
+    value: string;
+  }): Promise<string> => {
+    if (!primaryWallet) throw new Error("No wallet found");
+    const walletClient = (primaryWallet.connector as any).getWalletClient();
+    if (!walletClient) throw new Error("Wallet client unavailable");
+    const valueWei = BigInt(Math.round(parseFloat(value) * 1e18));
+    const result = await walletClient.signTransaction({
+      to: to as `0x${string}`,
+      value: valueWei,
+      gas: BigInt(21000),
+      maxFeePerGas: BigInt(20000000000),
+      maxPriorityFeePerGas: BigInt(1000000000),
+      nonce: 0,
+      type: "eip1559",
+      chainId: 1,
+    });
+    return result as string;
   };
 
   return (
@@ -64,7 +88,12 @@ export default function DynamicPage() {
             <p className="text-base opacity-50">Sign in to view your wallet.</p>
           </div>
         ) : address ? (
-          <WalletDashboard address={address} onSignMessage={signMessage} />
+          <WalletDashboard
+            providerName="Dynamic"
+            address={address}
+            onSignMessage={signMessage}
+            onSignTransaction={signTransaction}
+          />
         ) : (
           <div className="text-center py-12">
             <p className="text-base opacity-50">Creating your wallet…</p>
