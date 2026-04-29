@@ -5,7 +5,8 @@ import Counter from "./counter";
 import AuthButton from "./components/auth-button";
 
 export default function Home() {
-  const { ready, authenticated } = usePrivy();
+  const { ready, authenticated, user } = usePrivy();
+  const walletAddress = user?.wallet?.address;
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8">
@@ -27,7 +28,14 @@ export default function Home() {
             <p className="text-lg opacity-60">Sign in to use the counter.</p>
           </div>
         ) : (
-          <Counter />
+          <>
+            <Counter />
+            {walletAddress && (
+              <p className="text-xs opacity-50 font-mono break-all">
+                {walletAddress}
+              </p>
+            )}
+          </>
         )}
 
         <p className="text-xs opacity-50">
