@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "Next.js Counter App",
-  description: "A basic Next.js app with a simple counter demo.",
+  title: "Wallet Provider Demo",
+  description: "Compare embedded wallet and authentication providers.",
 };
 
 export default function RootLayout({
@@ -14,9 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
-        <Providers>{children}</Providers>
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

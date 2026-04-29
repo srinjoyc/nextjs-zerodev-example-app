@@ -1,50 +1,65 @@
-"use client";
+import ProviderCard from "./components/provider-card";
+import SessionBanner from "./components/session-banner";
 
-import { usePrivy } from "@privy-io/react-auth";
-import Counter from "./counter";
-import AuthButton from "./components/auth-button";
+const providers = [
+  {
+    name: "Privy",
+    description: "Email and social login with embedded wallet provisioning.",
+    href: "/privy",
+    status: "live" as const,
+    accentColor: "#FF4D00",
+  },
+  {
+    name: "Dynamic",
+    description: "Email and social login with embedded wallet provisioning.",
+    href: "/dynamic",
+    status: "live" as const,
+    accentColor: "#4F46E5",
+  },
+  {
+    name: "Magic",
+    description: "Passwordless login via magic links and OAuth.",
+    href: "/magic",
+    status: "coming-soon" as const,
+    accentColor: "#7C3AED",
+  },
+  {
+    name: "Web3Auth",
+    description: "MPC-based key management with social login.",
+    href: "/web3auth",
+    status: "coming-soon" as const,
+    accentColor: "#0364FF",
+  },
+  {
+    name: "ZeroDev",
+    description: "Smart account abstraction with passkey and social login.",
+    href: "/zerodev",
+    status: "coming-soon" as const,
+    accentColor: "#16A34A",
+  },
+];
 
 export default function Home() {
-  const { ready, authenticated, user } = usePrivy();
-  const walletAddress = user?.wallet?.address;
-
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8">
-      <div className="max-w-xl w-full text-center space-y-6">
-        <div className="flex justify-end">
-          <AuthButton />
+      <div className="max-w-2xl w-full space-y-8">
+        <SessionBanner />
+
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight">
+            Wallet Provider Demo
+          </h1>
+          <p className="text-base opacity-60">
+            Compare embedded wallet and authentication providers. Sign in with
+            each to explore the experience.
+          </p>
         </div>
 
-        <h1 className="text-4xl font-bold tracking-tight">
-          Next.js Counter Demo
-        </h1>
-        <p className="text-base opacity-70">
-          A minimal starter built with the App Router, TypeScript, and Tailwind
-          CSS. Click the buttons below to update the count.
-        </p>
-
-        {ready && !authenticated ? (
-          <div className="py-10 space-y-3">
-            <p className="text-lg opacity-60">Sign in to use the counter.</p>
-          </div>
-        ) : (
-          <>
-            <Counter />
-            {walletAddress && (
-              <p className="text-xs opacity-50 font-mono break-all">
-                {walletAddress}
-              </p>
-            )}
-          </>
-        )}
-
-        <p className="text-xs opacity-50">
-          Edit{" "}
-          <code className="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10">
-            app/page.tsx
-          </code>{" "}
-          to get started.
-        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {providers.map((p) => (
+            <ProviderCard key={p.name} {...p} />
+          ))}
+        </div>
       </div>
     </main>
   );
