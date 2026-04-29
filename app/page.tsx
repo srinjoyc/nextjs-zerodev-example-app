@@ -11,9 +11,9 @@ const providers = [
   },
   {
     name: "Dynamic",
-    description: "Multi-wallet authentication with built-in onramp support.",
+    description: "Email and social login with embedded wallet provisioning.",
     href: "/dynamic",
-    status: "coming-soon" as const,
+    status: "live" as const,
     accentColor: "#4F46E5",
   },
   {
