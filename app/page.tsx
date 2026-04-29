@@ -32,9 +32,9 @@ const providers = [
   },
   {
     name: "ZeroDev",
-    description: "Smart account abstraction with passkey and social login.",
+    description: "Smart account wallet with email OTP and social login.",
     href: "/zerodev",
-    status: "coming-soon" as const,
+    status: "live" as const,
     accentColor: "#16A34A",
   },
 ];
