@@ -1,5 +1,6 @@
 import ProviderCard from "./components/provider-card";
 import SessionBanner from "./components/session-banner";
+import Leaderboard from "./components/leaderboard";
 
 const providers = [
   {
@@ -37,6 +38,13 @@ const providers = [
     status: "live" as const,
     accentColor: "#16A34A",
   },
+  {
+    name: "Turnkey",
+    description: "Secure embedded wallets with email OTP and Google login.",
+    href: "/turnkey",
+    status: "live" as const,
+    accentColor: "#6366F1",
+  },
 ];
 
 export default function Home() {
@@ -60,6 +68,8 @@ export default function Home() {
             <ProviderCard key={p.name} {...p} />
           ))}
         </div>
+
+        <Leaderboard />
       </div>
     </main>
   );

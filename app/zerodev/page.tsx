@@ -2,14 +2,19 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { useAccount, useSignMessage } from "wagmi";
+import { useAccount, useSignMessage, useWalletClient } from "wagmi";
+import { useAuthenticators } from "@zerodev/wallet-react";
 import ZeroDevAuthButton from "./auth-button";
 import WalletDashboard from "../components/wallet-dashboard";
-import { setSession, clearSession } from "../lib/session";
+import { setSession, clearSessionForProvider } from "../lib/session";
 
 export default function ZeroDevPage() {
   const { address, isConnected, status } = useAccount();
   const { signMessageAsync } = useSignMessage();
+  const { data: walletClient } = useWalletClient();
+  const { data: authenticators } = useAuthenticators();
+
+  const email = authenticators?.emailContacts?.[0]?.email;
 
   useEffect(() => {
     if (isConnected && address) {
@@ -17,14 +22,36 @@ export default function ZeroDevPage() {
         provider: "ZeroDev",
         providerHref: "/zerodev",
         address,
-        displayName: `${address.slice(0, 6)}…${address.slice(-4)}`,
+        displayName: email ?? `${address.slice(0, 6)}…${address.slice(-4)}`,
       });
     } else if (status === "disconnected") {
-      clearSession();
+      clearSessionForProvider("ZeroDev");
     }
-  }, [isConnected, status, address]);
+  }, [isConnected, status, address, email]);
 
   const signMessage = (message: string) => signMessageAsync({ message });
+
+  const signTransaction = async ({
+    to,
+    value,
+  }: {
+    to: string;
+    value: string;
+  }): Promise<string> => {
+    if (!walletClient) throw new Error("Wallet client unavailable");
+    const valueWei = BigInt(Math.round(parseFloat(value) * 1e18));
+    const result = await walletClient.signTransaction({
+      to: to as `0x${string}`,
+      value: valueWei,
+      gas: BigInt(21000),
+      maxFeePerGas: BigInt(20000000000),
+      maxPriorityFeePerGas: BigInt(1000000000),
+      nonce: 0,
+      type: "eip1559",
+      chainId: 11155111,
+    });
+    return result;
+  };
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8">
@@ -52,7 +79,12 @@ export default function ZeroDevPage() {
             <p className="text-base opacity-50">Sign in to view your wallet.</p>
           </div>
         ) : address ? (
-          <WalletDashboard address={address} onSignMessage={signMessage} />
+          <WalletDashboard
+            providerName="ZeroDev"
+            address={address}
+            onSignMessage={signMessage}
+            onSignTransaction={signTransaction}
+          />
         ) : (
           <div className="text-center py-12">
             <p className="text-base opacity-50">Creating your wallet…</p>

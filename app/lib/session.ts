@@ -3,6 +3,7 @@ export interface ProviderSession {
   providerHref: string;
   address: string;
   displayName: string;
+  updatedAt: number;
 }
 
 const KEY = "wallet_demo_session";
@@ -17,10 +18,22 @@ export function getSession(): ProviderSession | null {
   }
 }
 
-export function setSession(session: ProviderSession): void {
-  localStorage.setItem(KEY, JSON.stringify(session));
+export function setSession(
+  session: Omit<ProviderSession, "updatedAt">
+): void {
+  localStorage.setItem(
+    KEY,
+    JSON.stringify({ ...session, updatedAt: Date.now() })
+  );
 }
 
 export function clearSession(): void {
   localStorage.removeItem(KEY);
+}
+
+export function clearSessionForProvider(provider: string): void {
+  const existing = getSession();
+  if (existing?.provider === provider) {
+    clearSession();
+  }
 }
