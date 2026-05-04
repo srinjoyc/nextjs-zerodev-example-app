@@ -241,7 +241,7 @@ export default function WalletDashboard({
             <p className="text-xs opacity-40 uppercase tracking-wide">
               Gasless Transaction · ZeroDev
             </p>
-            <span className="text-xs opacity-30">gas sponsored · 0 ETH value</span>
+            <span className="text-xs opacity-30">gas sponsored</span>
           </div>
 
           <div className="space-y-2">
@@ -252,6 +252,18 @@ export default function WalletDashboard({
               placeholder="To address (0x…)"
               className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-black/20 dark:focus:ring-white/20"
             />
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={gaslessTxValue}
+                onChange={(e) => setGaslessTxValue(e.target.value)}
+                placeholder="0"
+                min="0"
+                step="0.001"
+                className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black/20 dark:focus:ring-white/20"
+              />
+              <span className="text-sm opacity-40 shrink-0">ETH</span>
+            </div>
           </div>
 
           <button

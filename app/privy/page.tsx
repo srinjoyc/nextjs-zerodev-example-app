@@ -105,11 +105,13 @@ export default function PrivyPage() {
       },
     });
 
+    const valueWei = BigInt(Math.round(parseFloat(value) * 1e18));
+
     const userOpHash = await kernelClient.sendUserOperation({
       callData: await kernelClient.account.encodeCalls([
         {
           to: to as `0x${string}`,
-          value: BigInt(0),
+          value: valueWei,
           data: "0x",
         },
       ]),
