@@ -2,14 +2,27 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { usePrivy, useWallets, useSign7702Authorization } from "@privy-io/react-auth";
+import {
+  createKernelAccount,
+  createKernelAccountClient,
+  createZeroDevPaymasterClient,
+} from "@zerodev/sdk";
+import { KERNEL_V3_3, KERNEL_7702_DELEGATION_ADDRESS, getEntryPoint } from "@zerodev/sdk/constants";
+import { http, createPublicClient, isAddress } from "viem";
+import { arbitrumSepolia } from "viem/chains";
 import AuthButton from "./auth-button";
 import WalletDashboard from "../components/wallet-dashboard";
 import { setSession, clearSessionForProvider } from "../lib/session";
 
+const CHAIN = arbitrumSepolia;
+const ENTRY_POINT = getEntryPoint("0.7");
+const KERNEL_VERSION = KERNEL_V3_3;
+
 export default function PrivyPage() {
   const { ready, authenticated, user } = usePrivy();
   const { wallets } = useWallets();
+  const { signAuthorization: sign7702Auth } = useSign7702Authorization();
 
   const privyWallet = wallets.find((w) => w.walletClientType === "privy");
   const address = user?.wallet?.address;
@@ -37,6 +50,85 @@ export default function PrivyPage() {
       params: [message, privyWallet.address],
     });
     return sig as string;
+  };
+
+  const sendGaslessTransaction = async ({
+    to,
+    value,
+  }: {
+    to: string;
+    value: string;
+  }): Promise<string> => {
+    if (!privyWallet) throw new Error("No wallet found");
+    if (!isAddress(to)) throw new Error("Invalid recipient address");
+    const projectId = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID;
+    if (!projectId) throw new Error("NEXT_PUBLIC_ZERODEV_PROJECT_ID not set");
+    const rpc = `https://staging-meta-aa-provider.onrender.com/api/v3/${projectId}/chain/421614`;
+
+    const privyProvider = await privyWallet.getEthereumProvider();
+
+    const publicClient = createPublicClient({
+      transport: http(rpc),
+      chain: CHAIN,
+    });
+
+    const privyAuth = await sign7702Auth({ contractAddress: KERNEL_7702_DELEGATION_ADDRESS, chainId: CHAIN.id });
+    // Privy returns `address`; viem/ZeroDev expect `contractAddress`
+    const eip7702Auth = { ...privyAuth, contractAddress: privyAuth.address };
+
+    const account = await createKernelAccount(publicClient, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      eip7702Account: privyProvider as any,
+      eip7702Auth,
+      entryPoint: ENTRY_POINT,
+      kernelVersion: KERNEL_VERSION,
+    });
+
+    const paymasterClient = createZeroDevPaymasterClient({
+      chain: CHAIN,
+      transport: http(rpc),
+    });
+
+    const kernelClient = createKernelAccountClient({
+      account,
+      chain: CHAIN,
+      bundlerTransport: http(rpc),
+      client: publicClient,
+      paymaster: {
+        getPaymasterData: async (userOperation) => {
+          try {
+            return await paymasterClient.sponsorUserOperation({ userOperation });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (msg.includes("gas sponsoring policies")) {
+              throw new Error(
+                "No gas policy configured — add one at dashboard.zerodev.app under Gas Policies."
+              );
+            }
+            throw e;
+          }
+        },
+      },
+    });
+
+    const valueWei = BigInt(Math.round(parseFloat(value) * 1e18));
+
+    const userOpHash = await kernelClient.sendUserOperation({
+      callData: await kernelClient.account.encodeCalls([
+        {
+          to: to as `0x${string}`,
+          value: valueWei,
+          data: "0x",
+        },
+      ]),
+    });
+
+    const receipt = await kernelClient.waitForUserOperationReceipt({
+      hash: userOpHash,
+      timeout: 30_000,
+    });
+
+    return receipt.receipt.transactionHash;
   };
 
   const signTransaction = async ({
@@ -99,6 +191,7 @@ export default function PrivyPage() {
             address={address}
             onSignMessage={signMessage}
             onSignTransaction={signTransaction}
+            onSendGaslessTransaction={sendGaslessTransaction}
           />
         ) : (
           <div className="text-center py-12">
