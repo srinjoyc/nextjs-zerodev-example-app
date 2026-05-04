@@ -10,7 +10,7 @@ import {
 } from "@zerodev/sdk";
 import { KERNEL_V3_1, getEntryPoint } from "@zerodev/sdk/constants";
 import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
-import { http, createPublicClient } from "viem";
+import { http, createPublicClient, isAddress } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import AuthButton from "./auth-button";
 import WalletDashboard from "../components/wallet-dashboard";
@@ -60,6 +60,7 @@ export default function PrivyPage() {
     value: string;
   }): Promise<string> => {
     if (!privyWallet) throw new Error("No wallet found");
+    if (!isAddress(to)) throw new Error("Invalid recipient address");
     const projectId = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID;
     if (!projectId) throw new Error("NEXT_PUBLIC_ZERODEV_PROJECT_ID not set");
     const rpc = `https://rpc.zerodev.app/api/v3/${projectId}/chain/421614`;
