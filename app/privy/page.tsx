@@ -8,8 +8,7 @@ import {
   createKernelAccountClient,
   createZeroDevPaymasterClient,
 } from "@zerodev/sdk";
-import { KERNEL_V3_1, getEntryPoint } from "@zerodev/sdk/constants";
-import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
+import { KERNEL_V3_3, getEntryPoint } from "@zerodev/sdk/constants";
 import { http, createPublicClient, isAddress } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import AuthButton from "./auth-button";
@@ -18,7 +17,7 @@ import { setSession, clearSessionForProvider } from "../lib/session";
 
 const CHAIN = arbitrumSepolia;
 const ENTRY_POINT = getEntryPoint("0.7");
-const KERNEL_VERSION = KERNEL_V3_1;
+const KERNEL_VERSION = KERNEL_V3_3;
 
 export default function PrivyPage() {
   const { ready, authenticated, user } = usePrivy();
@@ -72,14 +71,9 @@ export default function PrivyPage() {
       chain: CHAIN,
     });
 
-    const ecdsaValidator = await signerToEcdsaValidator(publicClient, {
-      signer: privyProvider as Parameters<typeof signerToEcdsaValidator>[1]["signer"],
-      entryPoint: ENTRY_POINT,
-      kernelVersion: KERNEL_VERSION,
-    });
-
     const account = await createKernelAccount(publicClient, {
-      plugins: { sudo: ecdsaValidator },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      eip7702Account: privyProvider as any,
       entryPoint: ENTRY_POINT,
       kernelVersion: KERNEL_VERSION,
     });
