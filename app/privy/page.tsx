@@ -3,9 +3,22 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import {
+  createKernelAccount,
+  createKernelAccountClient,
+  createZeroDevPaymasterClient,
+} from "@zerodev/sdk";
+import { KERNEL_V3_1, getEntryPoint } from "@zerodev/sdk/constants";
+import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
+import { http, createPublicClient } from "viem";
+import { arbitrumSepolia } from "viem/chains";
 import AuthButton from "./auth-button";
 import WalletDashboard from "../components/wallet-dashboard";
 import { setSession, clearSessionForProvider } from "../lib/session";
+
+const CHAIN = arbitrumSepolia;
+const ENTRY_POINT = getEntryPoint("0.7");
+const KERNEL_VERSION = KERNEL_V3_1;
 
 export default function PrivyPage() {
   const { ready, authenticated, user } = usePrivy();
@@ -37,6 +50,66 @@ export default function PrivyPage() {
       params: [message, privyWallet.address],
     });
     return sig as string;
+  };
+
+  const sendGaslessTransaction = async ({
+    to,
+    value,
+  }: {
+    to: string;
+    value: string;
+  }): Promise<string> => {
+    if (!privyWallet) throw new Error("No wallet found");
+    const projectId = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID;
+    if (!projectId) throw new Error("NEXT_PUBLIC_ZERODEV_PROJECT_ID not set");
+    const rpc = `https://rpc.zerodev.app/api/v3/${projectId}/chain/421614`;
+
+    const privyProvider = await privyWallet.getEthereumProvider();
+
+    const publicClient = createPublicClient({
+      transport: http(rpc),
+      chain: CHAIN,
+    });
+
+    const ecdsaValidator = await signerToEcdsaValidator(publicClient, {
+      signer: privyProvider as Parameters<typeof signerToEcdsaValidator>[1]["signer"],
+      entryPoint: ENTRY_POINT,
+      kernelVersion: KERNEL_VERSION,
+    });
+
+    const account = await createKernelAccount(publicClient, {
+      plugins: { sudo: ecdsaValidator },
+      entryPoint: ENTRY_POINT,
+      kernelVersion: KERNEL_VERSION,
+    });
+
+    const paymasterClient = createZeroDevPaymasterClient({
+      chain: CHAIN,
+      transport: http(rpc),
+    });
+
+    const kernelClient = createKernelAccountClient({
+      account,
+      chain: CHAIN,
+      bundlerTransport: http(rpc),
+      client: publicClient,
+      paymaster: {
+        getPaymasterData: (userOperation) =>
+          paymasterClient.sponsorUserOperation({ userOperation }),
+      },
+    });
+
+    const valueWei = BigInt(Math.round(parseFloat(value) * 1e18));
+
+    return kernelClient.sendUserOperation({
+      callData: await kernelClient.account.encodeCalls([
+        {
+          to: to as `0x${string}`,
+          value: valueWei,
+          data: "0x",
+        },
+      ]),
+    });
   };
 
   const signTransaction = async ({
@@ -99,6 +172,7 @@ export default function PrivyPage() {
             address={address}
             onSignMessage={signMessage}
             onSignTransaction={signTransaction}
+            onSendGaslessTransaction={sendGaslessTransaction}
           />
         ) : (
           <div className="text-center py-12">

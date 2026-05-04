@@ -13,6 +13,7 @@ interface WalletDashboardProps {
   address: string;
   onSignMessage: (message: string) => Promise<string>;
   onSignTransaction?: (tx: TxParams) => Promise<string>;
+  onSendGaslessTransaction?: (tx: TxParams) => Promise<string>;
 }
 
 async function fetchEthBalance(address: string): Promise<string> {
@@ -36,6 +37,7 @@ export default function WalletDashboard({
   address,
   onSignMessage,
   onSignTransaction,
+  onSendGaslessTransaction,
 }: WalletDashboardProps) {
   const [balance, setBalance] = useState<string | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
@@ -53,7 +55,14 @@ export default function WalletDashboard({
   const [txError, setTxError] = useState<string | null>(null);
   const [txDuration, setTxDuration] = useState<number | null>(null);
 
-  const [copied, setCopied] = useState<"address" | "sig" | "tx" | null>(null);
+  const [gaslessTxTo, setGaslessTxTo] = useState("");
+  const [gaslessTxValue, setGaslessTxValue] = useState("0");
+  const [gaslessTxResult, setGaslessTxResult] = useState<string | null>(null);
+  const [gaslessTxSending, setGaslessTxSending] = useState(false);
+  const [gaslessTxError, setGaslessTxError] = useState<string | null>(null);
+  const [gaslessTxDuration, setGaslessTxDuration] = useState<number | null>(null);
+
+  const [copied, setCopied] = useState<"address" | "sig" | "tx" | "gasless" | null>(null);
 
   const loadBalance = useCallback(async () => {
     setBalanceLoading(true);
@@ -70,7 +79,7 @@ export default function WalletDashboard({
     loadBalance();
   }, [loadBalance]);
 
-  const copy = (text: string, key: "address" | "sig" | "tx") => {
+  const copy = (text: string, key: "address" | "sig" | "tx" | "gasless") => {
     navigator.clipboard.writeText(text);
     setCopied(key);
     setTimeout(() => setCopied(null), 1500);
@@ -111,6 +120,25 @@ export default function WalletDashboard({
       setTxError(e instanceof Error ? e.message : "Transaction signing failed");
     } finally {
       setTxSigning(false);
+    }
+  };
+
+  const handleSendGasless = async () => {
+    if (!gaslessTxTo.trim() || !onSendGaslessTransaction) return;
+    setGaslessTxSending(true);
+    setGaslessTxError(null);
+    setGaslessTxResult(null);
+    setGaslessTxDuration(null);
+    const t0 = performance.now();
+    try {
+      setGaslessTxResult(await onSendGaslessTransaction({ to: gaslessTxTo.trim(), value: gaslessTxValue || "0" }));
+      const d = performance.now() - t0;
+      setGaslessTxDuration(d);
+      saveRecord({ provider: providerName, type: "gasless", duration: d });
+    } catch (e) {
+      setGaslessTxError(e instanceof Error ? e.message : "Gasless send failed");
+    } finally {
+      setGaslessTxSending(false);
     }
   };
 
@@ -205,6 +233,78 @@ export default function WalletDashboard({
           </div>
         )}
       </div>
+
+      {/* Gasless Transaction */}
+      {onSendGaslessTransaction && (
+        <div className="rounded-xl border border-black/10 dark:border-white/10 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs opacity-40 uppercase tracking-wide">
+              Gasless Transaction · ZeroDev
+            </p>
+            <span className="text-xs opacity-30">gas sponsored</span>
+          </div>
+
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={gaslessTxTo}
+              onChange={(e) => setGaslessTxTo(e.target.value)}
+              placeholder="To address (0x…)"
+              className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-black/20 dark:focus:ring-white/20"
+            />
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={gaslessTxValue}
+                onChange={(e) => setGaslessTxValue(e.target.value)}
+                placeholder="0"
+                min="0"
+                step="0.001"
+                className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black/20 dark:focus:ring-white/20"
+              />
+              <span className="text-sm opacity-40 shrink-0">ETH</span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSendGasless}
+            disabled={gaslessTxSending || !gaslessTxTo.trim()}
+            className="w-full py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-medium hover:opacity-90 transition disabled:opacity-40"
+          >
+            {gaslessTxSending ? "Sending…" : "Send gasless"}
+          </button>
+
+          {gaslessTxError && (
+            <p className="text-xs text-red-500">{gaslessTxError}</p>
+          )}
+
+          {gaslessTxResult && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs opacity-40">UserOp hash</p>
+                  {gaslessTxDuration !== null && (
+                    <span className="text-xs font-mono text-green-600 dark:text-green-400">
+                      {gaslessTxDuration < 1000
+                        ? `${Math.round(gaslessTxDuration)}ms`
+                        : `${(gaslessTxDuration / 1000).toFixed(2)}s`}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => copy(gaslessTxResult, "gasless")}
+                  className="text-xs opacity-50 hover:opacity-100 transition"
+                >
+                  {copied === "gasless" ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <p className="font-mono text-xs break-all opacity-60 bg-black/5 dark:bg-white/5 rounded-lg p-3">
+                {gaslessTxResult}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Sign Transaction */}
       {onSignTransaction && (

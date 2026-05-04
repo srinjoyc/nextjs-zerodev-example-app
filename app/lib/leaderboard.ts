@@ -1,4 +1,4 @@
-export type SignType = "personal" | "transaction";
+export type SignType = "personal" | "transaction" | "gasless";
 
 export interface SignRecord {
   provider: string;
