@@ -2,13 +2,13 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { usePrivy, useWallets, useSign7702Authorization } from "@privy-io/react-auth";
 import {
   createKernelAccount,
   createKernelAccountClient,
   createZeroDevPaymasterClient,
 } from "@zerodev/sdk";
-import { KERNEL_V3_3, getEntryPoint } from "@zerodev/sdk/constants";
+import { KERNEL_V3_3, KERNEL_7702_DELEGATION_ADDRESS, getEntryPoint } from "@zerodev/sdk/constants";
 import { http, createPublicClient, isAddress } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import AuthButton from "./auth-button";
@@ -22,6 +22,7 @@ const KERNEL_VERSION = KERNEL_V3_3;
 export default function PrivyPage() {
   const { ready, authenticated, user } = usePrivy();
   const { wallets } = useWallets();
+  const { signAuthorization: sign7702Auth } = useSign7702Authorization();
 
   const privyWallet = wallets.find((w) => w.walletClientType === "privy");
   const address = user?.wallet?.address;
@@ -71,9 +72,14 @@ export default function PrivyPage() {
       chain: CHAIN,
     });
 
+    const privyAuth = await sign7702Auth({ contractAddress: KERNEL_7702_DELEGATION_ADDRESS, chainId: CHAIN.id });
+    // Privy returns `address`; viem/ZeroDev expect `contractAddress`
+    const eip7702Auth = { ...privyAuth, contractAddress: privyAuth.address };
+
     const account = await createKernelAccount(publicClient, {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       eip7702Account: privyProvider as any,
+      eip7702Auth,
       entryPoint: ENTRY_POINT,
       kernelVersion: KERNEL_VERSION,
     });

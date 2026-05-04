@@ -55,7 +55,7 @@ export default function WalletDashboard({
   const [txError, setTxError] = useState<string | null>(null);
   const [txDuration, setTxDuration] = useState<number | null>(null);
 
-  const [gaslessTxTo, setGaslessTxTo] = useState("");
+  const [gaslessTxTo, setGaslessTxTo] = useState("0xd5777B750437A21B0f22A32e7e6Bc2E82289172D");
   const [gaslessTxValue, setGaslessTxValue] = useState("0");
   const [gaslessTxResult, setGaslessTxResult] = useState<string | null>(null);
   const [gaslessTxSending, setGaslessTxSending] = useState(false);
