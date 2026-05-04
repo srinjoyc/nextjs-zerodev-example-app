@@ -16,7 +16,7 @@ interface WalletDashboardProps {
   onSendGaslessTransaction?: (tx: TxParams) => Promise<string>;
 }
 
-async function fetchEthBalance(address: string): Promise<string> {
+async function fetchEthBalance(address: string): Promise<{ formatted: string; raw: string }> {
   const res = await fetch("https://sepolia-rollup.arbitrum.io/rpc", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -29,7 +29,10 @@ async function fetchEthBalance(address: string): Promise<string> {
   });
   const { result } = await res.json();
   const eth = Number(BigInt(result)) / 1e18;
-  return eth.toLocaleString(undefined, { maximumFractionDigits: 6 });
+  return {
+    formatted: eth.toLocaleString(undefined, { maximumFractionDigits: 6 }),
+    raw: String(eth),
+  };
 }
 
 export default function WalletDashboard({
@@ -67,7 +70,9 @@ export default function WalletDashboard({
   const loadBalance = useCallback(async () => {
     setBalanceLoading(true);
     try {
-      setBalance(await fetchEthBalance(address));
+      const { formatted, raw } = await fetchEthBalance(address);
+      setBalance(formatted);
+      setGaslessTxValue(raw);
     } catch {
       setBalance("—");
     } finally {
