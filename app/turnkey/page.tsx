@@ -9,6 +9,42 @@ import AuthButton from "./auth-button";
 import WalletDashboard from "../components/wallet-dashboard";
 import { setSession, clearSessionForProvider } from "../lib/session";
 
+type TurnkeyUser = NonNullable<ReturnType<typeof useTurnkey>["user"]>;
+
+function TurnkeyProfile({ user }: { user: TurnkeyUser }) {
+  const oauth = user.oauthProviders?.[0];
+  const email = user.userEmail;
+  const name = user.userName;
+
+  return (
+    <div className="rounded-xl border border-black/10 dark:border-white/10 p-4 space-y-3">
+      <p className="text-xs opacity-40 uppercase tracking-wide">Profile</p>
+      <div className="space-y-0.5 min-w-0">
+        {name && <p className="text-sm font-medium truncate">{name}</p>}
+        {email && <p className="text-sm font-mono opacity-60 truncate">{email}</p>}
+      </div>
+      {oauth && (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+          <span className="opacity-40">Provider</span>
+          <span className="font-mono opacity-80 capitalize">{oauth.providerName}</span>
+          {oauth.issuer && (
+            <>
+              <span className="opacity-40">Issuer</span>
+              <span className="font-mono opacity-60 truncate">{oauth.issuer}</span>
+            </>
+          )}
+          {oauth.subject && (
+            <>
+              <span className="opacity-40">Subject</span>
+              <span className="font-mono opacity-60 truncate">{oauth.subject}</span>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TurnkeyPage() {
   const { authState, user, wallets, signMessage, signTransaction, createWallet } = useTurnkey();
 
@@ -54,7 +90,7 @@ export default function TurnkeyPage() {
       maxPriorityFeePerGas: BigInt(1000000000),
       nonce: 0,
       type: "eip1559",
-      chainId: 1,
+      chainId: 421614,
     });
     const result = await signTransaction({
       unsignedTransaction: unsignedHex.slice(2),
@@ -100,12 +136,15 @@ export default function TurnkeyPage() {
             <p className="text-base opacity-50">Sign in to view your wallet.</p>
           </div>
         ) : address ? (
-          <WalletDashboard
-            providerName="Turnkey"
-            address={address}
-            onSignMessage={handleSignMessage}
-            onSignTransaction={handleSignTransaction}
-          />
+          <>
+            {user && <TurnkeyProfile user={user} />}
+            <WalletDashboard
+              providerName="Turnkey"
+              address={address}
+              onSignMessage={handleSignMessage}
+              onSignTransaction={handleSignTransaction}
+            />
+          </>
         ) : (
           <div className="text-center py-12">
             <p className="text-base opacity-50">Creating your wallet…</p>

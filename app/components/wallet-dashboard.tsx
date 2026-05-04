@@ -16,7 +16,7 @@ interface WalletDashboardProps {
 }
 
 async function fetchEthBalance(address: string): Promise<string> {
-  const res = await fetch("https://eth.llamarpc.com", {
+  const res = await fetch("https://sepolia-rollup.arbitrum.io/rpc", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -136,7 +136,7 @@ export default function WalletDashboard({
       <div className="rounded-xl border border-black/10 dark:border-white/10 p-4 space-y-1">
         <div className="flex items-center justify-between">
           <p className="text-xs opacity-40 uppercase tracking-wide">
-            Balance · Ethereum Mainnet
+            Balance · Arbitrum Sepolia
           </p>
           <button
             onClick={loadBalance}
