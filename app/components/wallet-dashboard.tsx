@@ -241,7 +241,7 @@ export default function WalletDashboard({
             <p className="text-xs opacity-40 uppercase tracking-wide">
               Gasless Transaction · ZeroDev
             </p>
-            <span className="text-xs opacity-30">gas sponsored</span>
+            <span className="text-xs opacity-30">gas sponsored · 0 ETH value</span>
           </div>
 
           <div className="space-y-2">
@@ -252,18 +252,6 @@ export default function WalletDashboard({
               placeholder="To address (0x…)"
               className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-black/20 dark:focus:ring-white/20"
             />
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={gaslessTxValue}
-                onChange={(e) => setGaslessTxValue(e.target.value)}
-                placeholder="0"
-                min="0"
-                step="0.001"
-                className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black/20 dark:focus:ring-white/20"
-              />
-              <span className="text-sm opacity-40 shrink-0">ETH</span>
-            </div>
           </div>
 
           <button
@@ -271,7 +259,7 @@ export default function WalletDashboard({
             disabled={gaslessTxSending || !gaslessTxTo.trim()}
             className="w-full py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-medium hover:opacity-90 transition disabled:opacity-40"
           >
-            {gaslessTxSending ? "Sending…" : "Send gasless"}
+            {gaslessTxSending ? "Waiting for receipt…" : "Send gasless"}
           </button>
 
           {gaslessTxError && (
@@ -282,7 +270,7 @@ export default function WalletDashboard({
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <p className="text-xs opacity-40">UserOp hash</p>
+                  <p className="text-xs opacity-40">Tx hash</p>
                   {gaslessTxDuration !== null && (
                     <span className="text-xs font-mono text-green-600 dark:text-green-400">
                       {gaslessTxDuration < 1000

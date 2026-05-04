@@ -111,17 +111,22 @@ export default function PrivyPage() {
       },
     });
 
-    const valueWei = BigInt(Math.round(parseFloat(value) * 1e18));
-
-    return kernelClient.sendUserOperation({
+    const userOpHash = await kernelClient.sendUserOperation({
       callData: await kernelClient.account.encodeCalls([
         {
           to: to as `0x${string}`,
-          value: valueWei,
+          value: BigInt(0),
           data: "0x",
         },
       ]),
     });
+
+    const receipt = await kernelClient.waitForUserOperationReceipt({
+      hash: userOpHash,
+      timeout: 30_000,
+    });
+
+    return receipt.receipt.transactionHash;
   };
 
   const signTransaction = async ({
