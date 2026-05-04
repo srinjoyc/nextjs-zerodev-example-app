@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { useAccount, useSignMessage, useWalletClient } from "wagmi";
 import { useAuthenticators } from "@zerodev/wallet-react";
@@ -8,13 +8,91 @@ import ZeroDevAuthButton from "./auth-button";
 import WalletDashboard from "../components/wallet-dashboard";
 import { setSession, clearSessionForProvider } from "../lib/session";
 
+interface AuthenticatorsData {
+  emailContacts?: Array<{ email?: string; [key: string]: unknown }>;
+  oauths?: Array<{ provider?: string; clientId?: string; subject?: string; [key: string]: unknown }>;
+  [key: string]: unknown;
+}
+
+const HEADER_KEYS = new Set(["provider", "clientId", "subject", "picture", "avatar_url", "name", "given_name"]);
+
+function OAuthProfile({ authenticators }: { authenticators: AuthenticatorsData }) {
+  const oauth = authenticators.oauths?.[0];
+
+  const allOAuthEntries = oauth
+    ? Object.entries(oauth).filter(([, v]) => v !== null && v !== undefined && v !== "")
+    : [];
+
+  const emailContact = authenticators.emailContacts?.[0]?.email;
+  const emailFromOAuth = allOAuthEntries.find(([k]) =>
+    k === "email" || k === "email_address" || k === "emailAddress"
+  )?.[1] as string | undefined;
+  const email = emailContact ?? emailFromOAuth;
+
+  const extraFields = allOAuthEntries.filter(([k]) => !HEADER_KEYS.has(k) && k !== "email" && k !== "email_address" && k !== "emailAddress");
+
+  const picture =
+    (oauth?.picture as string | undefined) ??
+    (allOAuthEntries.find(([k]) => k === "avatar_url")?.[1] as string | undefined);
+
+  const name =
+    (oauth?.name as string | undefined) ??
+    (oauth?.given_name as string | undefined);
+
+  if (!oauth && !email) return null;
+
+  return (
+    <div className="rounded-xl border border-black/10 dark:border-white/10 p-4 space-y-3">
+      <p className="text-xs opacity-40 uppercase tracking-wide">OAuth Profile</p>
+      <div className="flex items-center gap-3">
+        {picture && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={picture} alt="avatar" className="h-10 w-10 rounded-full shrink-0" />
+        )}
+        <div className="space-y-0.5 min-w-0">
+          {name && <p className="text-sm font-medium truncate">{name}</p>}
+          {email && <p className="text-sm font-mono opacity-60 truncate">{email}</p>}
+        </div>
+      </div>
+      {oauth && (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+          {oauth.provider && (
+            <>
+              <span className="opacity-40">Provider</span>
+              <span className="font-mono opacity-80 capitalize">{oauth.provider}</span>
+            </>
+          )}
+          {oauth.subject && (
+            <>
+              <span className="opacity-40">Subject</span>
+              <span className="font-mono opacity-60 truncate">{oauth.subject as string}</span>
+            </>
+          )}
+          {extraFields
+            .filter(([k]) => !["name", "given_name", "picture", "avatar_url"].includes(k))
+            .slice(0, 6)
+            .map(([k, v]) => (
+              <React.Fragment key={k}>
+                <span className="opacity-40">{k}</span>
+                <span className="font-mono opacity-60 truncate">{String(v)}</span>
+              </React.Fragment>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ZeroDevPage() {
   const { address, isConnected, status } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const { data: walletClient } = useWalletClient();
   const { data: authenticators } = useAuthenticators();
 
-  const email = authenticators?.emailContacts?.[0]?.email;
+  const oauthEntry = authenticators?.oauths?.[0];
+  const email =
+    authenticators?.emailContacts?.[0]?.email ??
+    (oauthEntry?.email as string | undefined);
 
   useEffect(() => {
     if (isConnected && address) {
@@ -48,7 +126,7 @@ export default function ZeroDevPage() {
       maxPriorityFeePerGas: BigInt(1000000000),
       nonce: 0,
       type: "eip1559",
-      chainId: 11155111,
+      chainId: 421614,
     });
     return result;
   };
@@ -79,12 +157,17 @@ export default function ZeroDevPage() {
             <p className="text-base opacity-50">Sign in to view your wallet.</p>
           </div>
         ) : address ? (
-          <WalletDashboard
-            providerName="ZeroDev"
-            address={address}
-            onSignMessage={signMessage}
-            onSignTransaction={signTransaction}
-          />
+          <>
+            {authenticators && (
+              <OAuthProfile authenticators={authenticators as AuthenticatorsData} />
+            )}
+            <WalletDashboard
+              providerName="ZeroDev"
+              address={address}
+              onSignMessage={signMessage}
+              onSignTransaction={signTransaction}
+            />
+          </>
         ) : (
           <div className="text-center py-12">
             <p className="text-base opacity-50">Creating your wallet…</p>

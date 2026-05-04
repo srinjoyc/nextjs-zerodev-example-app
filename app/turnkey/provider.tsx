@@ -2,6 +2,11 @@
 
 import { TurnkeyProvider, type TurnkeyProviderConfig } from "@turnkey/react-wallet-kit";
 
+const REDIRECT_URI =
+  typeof window !== "undefined"
+    ? `${window.location.origin}/turnkey`
+    : undefined;
+
 const config: TurnkeyProviderConfig = {
   organizationId: process.env.NEXT_PUBLIC_TURNKEY_ORGANIZATION_ID!,
   authProxyConfigId: process.env.NEXT_PUBLIC_TURNKEY_AUTH_PROXY_CONFIG_ID,
@@ -11,10 +16,7 @@ const config: TurnkeyProviderConfig = {
       googleOauthEnabled: true,
     },
     oauthConfig: {
-      oauthRedirectUri:
-        typeof window !== "undefined"
-          ? `${window.location.origin}/turnkey`
-          : undefined,
+      oauthRedirectUri: REDIRECT_URI,
     },
   },
 };

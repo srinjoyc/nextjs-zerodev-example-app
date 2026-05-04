@@ -61,7 +61,7 @@ export default function PrivyPage() {
           maxPriorityFeePerGas: "0x3B9ACA00",
           nonce: "0x0",
           type: "0x2",
-          chainId: "0x1",
+          chainId: "0x66EEE",
         },
       ],
     });
