@@ -63,7 +63,7 @@ export default function PrivyPage() {
     if (!isAddress(to)) throw new Error("Invalid recipient address");
     const projectId = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID;
     if (!projectId) throw new Error("NEXT_PUBLIC_ZERODEV_PROJECT_ID not set");
-    const rpc = `https://rpc.zerodev.app/api/v3/${projectId}/chain/421614`;
+    const rpc = `https://staging-meta-aa-provider.onrender.com/api/v3/${projectId}/chain/421614`;
 
     const privyProvider = await privyWallet.getEthereumProvider();
 
