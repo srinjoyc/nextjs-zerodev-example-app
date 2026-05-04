@@ -95,8 +95,19 @@ export default function PrivyPage() {
       bundlerTransport: http(rpc),
       client: publicClient,
       paymaster: {
-        getPaymasterData: (userOperation) =>
-          paymasterClient.sponsorUserOperation({ userOperation }),
+        getPaymasterData: async (userOperation) => {
+          try {
+            return await paymasterClient.sponsorUserOperation({ userOperation });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (msg.includes("gas sponsoring policies")) {
+              throw new Error(
+                "No gas policy configured — add one at dashboard.zerodev.app under Gas Policies."
+              );
+            }
+            throw e;
+          }
+        },
       },
     });
 
