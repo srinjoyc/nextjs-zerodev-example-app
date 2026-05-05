@@ -2,8 +2,9 @@
 
 import React, { useEffect } from "react";
 import Link from "next/link";
-import { useAccount, useSignMessage, useWalletClient } from "wagmi";
+import { useAccount, useSignMessage, useWalletClient, useSendTransaction } from "wagmi";
 import { useAuthenticators } from "@zerodev/wallet-react";
+import { isAddress } from "viem";
 import ZeroDevAuthButton from "./auth-button";
 import WalletDashboard from "../components/wallet-dashboard";
 import { setSession, clearSessionForProvider } from "../lib/session";
@@ -87,6 +88,7 @@ export default function ZeroDevPage() {
   const { address, isConnected, status } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const { data: walletClient } = useWalletClient();
+  const { sendTransactionAsync } = useSendTransaction();
   const { data: authenticators } = useAuthenticators();
 
   const oauthEntry = authenticators?.oauths?.[0];
@@ -108,6 +110,18 @@ export default function ZeroDevPage() {
   }, [isConnected, status, address, email]);
 
   const signMessage = (message: string) => signMessageAsync({ message });
+
+  const sendGaslessTransaction = async ({
+    to,
+    value,
+  }: {
+    to: string;
+    value: string;
+  }): Promise<string> => {
+    if (!isAddress(to)) throw new Error("Invalid recipient address");
+    const valueWei = BigInt(Math.round(parseFloat(value) * 1e18));
+    return sendTransactionAsync({ to: to as `0x${string}`, value: valueWei });
+  };
 
   const signTransaction = async ({
     to,
@@ -166,6 +180,7 @@ export default function ZeroDevPage() {
               address={address}
               onSignMessage={signMessage}
               onSignTransaction={signTransaction}
+              onSendGaslessTransaction={sendGaslessTransaction}
             />
           </>
         ) : (

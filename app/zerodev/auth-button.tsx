@@ -18,6 +18,7 @@ export default function ZeroDevAuthButton() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [otpId, setOtpId] = useState<string | null>(null);
+  const [otpBundle, setOtpBundle] = useState<string | null>(null);
 
   const sendOTP = useSendOTP();
   const verifyOTP = useVerifyOTP();
@@ -26,6 +27,7 @@ export default function ZeroDevAuthButton() {
   const resetPanel = () => {
     setShowPanel(false);
     setOtpId(null);
+    setOtpBundle(null);
     setEmail("");
     setCode("");
   };
@@ -33,10 +35,11 @@ export default function ZeroDevAuthButton() {
   const handleSendOTP = async () => {
     const result = await sendOTP.mutateAsync({ email });
     setOtpId(result.otpId);
+    setOtpBundle(result.otpEncryptionTargetBundle);
   };
 
   const handleVerifyOTP = async () => {
-    await verifyOTP.mutateAsync({ otpId: otpId!, code });
+    await verifyOTP.mutateAsync({ otpId: otpId!, otpEncryptionTargetBundle: otpBundle!, code });
     resetPanel();
   };
 

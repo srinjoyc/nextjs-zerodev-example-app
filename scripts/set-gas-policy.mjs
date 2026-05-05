@@ -28,7 +28,8 @@ const TARGET_POLICY = {
     {
       rateLimitType: "limit_by_times",
       value: 1,
-      interval: 30, // seconds
+      interval: 30,         // seconds (API stores interval but drops intervalUnit in response)
+      intervalUnit: "second",
     },
   ],
 };

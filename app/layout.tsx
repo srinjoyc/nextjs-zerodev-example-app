@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import OAuthCallbackHandler from "./components/oauth-callback-handler";
 
 export const metadata: Metadata = {
   title: "Wallet Provider Demo",
@@ -15,7 +14,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <OAuthCallbackHandler />
         {children}
       </body>
     </html>
